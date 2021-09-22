@@ -84,12 +84,12 @@ $n - subnet-id
 }
 ```
 
-cat '/tmpfs/flexid/eth0/00:01:02:03:03:AA'
+cat '/tmpfs/flexid/100/00:01:02:03:03:AA'
 ```
 10.9.1.2
 ```
 
-cat '/tmpfs/flexid/eth0/00:01:02:03:03:BB'
+cat '/tmpfs/flexid/100/00:01:02:03:03:BB'
 ```
 0.0.0.3
 ```
