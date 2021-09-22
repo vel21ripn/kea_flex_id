@@ -1,0 +1,20 @@
+# Copyright (C) 2021 Internet Systems Consortium, Inc. ("ISC")
+
+% FLEX_ID_LOAD Run Script hooks library has been loaded
+This info message indicates that the Run Script hooks library has been loaded.
+
+% FLEX_ID_LOAD_ERROR Run Script hooks library failed: %1
+This error message indicates an error during loading the Run Script hooks
+library. The details of the error are provided as argument of the log message.
+
+% FLEX_ID_UNLOAD Run Script hooks library has been unloaded
+This info message indicates that the RunScript hooks library has been unloaded.
+
+% FLEX_ID_NO_LINK Flex-ID path %1 : %2
+This debug error message.
+
+% FLEX_ID_BAD_IP Flex-ID %1 bad ipv4 '%2'
+This debug error message.
+
+% FLEX_ID_IP Flex-ID %1 get ipv4 '%2'
+This debug message shows the resulting IPv4 address.
