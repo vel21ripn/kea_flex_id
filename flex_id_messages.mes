@@ -1,6 +1,6 @@
 # Copyright (C) 2021 Internet Systems Consortium, Inc. ("ISC")
 
-% FLEX_ID_LOAD Run Script hooks library has been loaded
+% FLEX_ID_LOAD Run Script hooks library has been loaded template_id %1, template_class %2
 This info message indicates that the Run Script hooks library has been loaded.
 
 % FLEX_ID_LOAD_ERROR Run Script hooks library failed: %1
@@ -13,8 +13,32 @@ This info message indicates that the RunScript hooks library has been unloaded.
 % FLEX_ID_NO_LINK Flex-ID path %1 : %2
 This debug error message.
 
+% FLEX_ID_PATH '%1' -> '%2' (%3)
+This debug error message.
+
 % FLEX_ID_BAD_IP Flex-ID %1 bad ipv4 '%2'
 This debug error message.
 
 % FLEX_ID_IP Flex-ID %1 get ipv4 '%2'
 This debug message shows the resulting IPv4 address.
+
+% FLEX_ID_OPTSTR Flex-ID add template '%1'
+This debug message shows the added templates.
+
+% FLEX_ID_NO_OPT Flex-ID '%1' not set
+This debug message
+
+% FLEX_CLS_BAD Flex-CLS Invalid class name '%1'. Allowed only isalnum().
+This debug error message.
+
+% FLEX_CLS_OPTSTR Flex-CLS add template '%1'
+This debug message shows templates.
+
+% FLEX_CLS_ADD Flex-CLS add class '%1'
+This debug message shows named of added class.
+
+% FLEX_CLS_MODE Flex-CLS mode '%1'
+This debug message shows mode.
+
+% FLEX_CLS_DEFAULT Flex-CLS default class '%1'
+This debug message shows named of added class.
