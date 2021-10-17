@@ -283,12 +283,14 @@ int find_id(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid, std::vector<uint8_t> &id_val
             }
 	    continue;
         }
+
+	char id_hex_str[12];
+	snprintf(id_hex_str,sizeof(id_hex_str),"0x%08x",htonl(inp.s_addr));
+        LOG_INFO(flex_id_logger, FLEX_ID_IP).arg(path).arg(id_hex_str);
+        
         for(l=0; l < 4; l++,inp.s_addr >>= 8)
             id_value.push_back(inp.s_addr & 0xff);
 
-        if(kea_flex_id_debug) {
-            LOG_INFO(flex_id_logger, FLEX_ID_IP).arg(path).arg(d);
-        }
         return 1;
     }
     return 0;

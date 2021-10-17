@@ -28,7 +28,7 @@ const char* values[] = {
     "FLEX_CLS_MODE", "Flex-CLS mode '%1'",
     "FLEX_CLS_OPTSTR", "Flex-CLS add template '%1'",
     "FLEX_ID_BAD_IP", "Flex-ID %1 bad ipv4 '%2'",
-    "FLEX_ID_IP", "Flex-ID %1 get ipv4 '%2'",
+    "FLEX_ID_IP", "Flex-ID %2 from '%1'",
     "FLEX_ID_LOAD", "Run Script hooks library has been loaded template_id %1, template_class %2",
     "FLEX_ID_LOAD_ERROR", "Run Script hooks library failed: %1",
     "FLEX_ID_NO_LINK", "Flex-ID path %1 : %2",

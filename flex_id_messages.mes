@@ -19,8 +19,8 @@ This debug error message.
 % FLEX_ID_BAD_IP Flex-ID %1 bad ipv4 '%2'
 This debug error message.
 
-% FLEX_ID_IP Flex-ID %1 get ipv4 '%2'
-This debug message shows the resulting IPv4 address.
+% FLEX_ID_IP Flex-ID %2 from '%1'
+This debug message shows the resulting flex-id.
 
 % FLEX_ID_OPTSTR Flex-ID add template '%1'
 This debug message shows the added templates.
