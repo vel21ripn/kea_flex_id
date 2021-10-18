@@ -216,8 +216,8 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 		if(!opt_id.empty()) opt_id += ':';
 		uint8_t v1 = (o82s[i] & 0xf) + 0x30;
 		uint8_t v2 = ((o82s[i] >> 4) & 0xf) + 0x30;
-		opt_id += (char)(v2 < 0x3a ? v2 : v2+27);
-		opt_id += (char)(v1 < 0x3a ? v1 : v1+27);
+		opt_id += (char)(v2 < 0x3a ? v2 : v2+39);
+		opt_id += (char)(v1 < 0x3a ? v1 : v1+39);
 	    }
 	    macros['s'] = opt_id;
 	}
