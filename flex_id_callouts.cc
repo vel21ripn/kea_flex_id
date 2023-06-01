@@ -189,9 +189,25 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
       } else {
 	const OptionBuffer o82v = opt82->getData();
 	if(o82v[0] != 0 || o82v[1] != 4) {
-           if(kea_flex_id_debug) {
-	      LOG_INFO(flex_id_logger, "No port 00 04");
-	   }
+          if(kea_flex_id_debug) {
+	    LOG_INFO(flex_id_logger, "No port 00 04");
+	  }
+	  std::string  opt_id;
+	  opt_id.clear();
+	  bool is_text = true;
+	  int opt_len = opt82->len()-2;
+	  for(int i=0; i < opt_len; i++) {
+	    const char c = (char)o82v[i];
+	    if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+	       (c >= '0' && c <= '9') || strchr(":;.,_-=",c)) {
+	          opt_id += c;
+	    } else {
+	          is_text = false;
+	    }
+	  }
+	  if(is_text) {
+	    macros['o'] = opt_id;
+	  }
         } else {
     	    macros['v'] = boost::lexical_cast<std::string>(int ((o82v[2]*256 + o82v[3]) & 0xfff));
 	    macros['p'] = boost::lexical_cast<std::string>(int ((o82v[4]*256 + o82v[5]) & 0xffff));
@@ -213,7 +229,7 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 	    std::string  opt_id;
 	    opt_id.clear();
 	    for(int i=2; i < 8; i++) {
-		if(!opt_id.empty()) opt_id += ':';
+		if(opt_id.empty()) opt_id += ':';
 		uint8_t v1 = (o82s[i] & 0xf) + 0x30;
 		uint8_t v2 = ((o82s[i] >> 4) & 0xf) + 0x30;
 		opt_id += (char)(v2 < 0x3a ? v2 : v2+39);

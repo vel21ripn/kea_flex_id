@@ -73,6 +73,7 @@ $i - server interface name
 $s - MAC-addess of switsh (opt82)
 $v - vlan number (opt82)
 $p - port number (opt82)
+$o - remoteid as string (opt82) 
 $n - subnet-id (only for id template!)
 
 
