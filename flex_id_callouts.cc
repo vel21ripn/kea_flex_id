@@ -36,6 +36,7 @@ using namespace isc::dhcp;
 using namespace isc::hooks;
 using namespace isc::flex_id;
 using namespace isc::util;
+using namespace isc::log;
 
 
 static std::vector<std::string> flex_id_template;
@@ -178,19 +179,19 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 
     if(!option) { 
         if(kea_flex_id_debug) {
-	  LOG_INFO(flex_id_logger, "No DHCP_AGENT_OPTIONS");
+	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No DHCP_AGENT_OPTIONS");
 	}
     } else {
       OptionPtr opt82 = option->getOption(RAI_OPTION_AGENT_CIRCUIT_ID);
       if(!opt82) {
         if(kea_flex_id_debug) {
-	  LOG_INFO(flex_id_logger, "No AGENT_CIRCUIT_ID");
+	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No AGENT_CIRCUIT_ID");
 	}
       } else {
 	const OptionBuffer o82v = opt82->getData();
 	if(o82v[0] != 0 || o82v[1] != 4) {
           if(kea_flex_id_debug) {
-	    LOG_INFO(flex_id_logger, "No port 00 04");
+	    LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No port 00 04");
 	  }
 	  std::string  opt_id;
 	  opt_id.clear();
@@ -217,13 +218,13 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
       opt82 = option->getOption(RAI_OPTION_REMOTE_ID);
       if(!opt82) { 
         if(kea_flex_id_debug) {
-	  LOG_INFO(flex_id_logger, "No REMOTE_ID");
+	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No REMOTE_ID");
 	}
       } else {
 	const OptionBuffer o82s = opt82->getData();
 	if(o82s[0] != 0 || o82s[1] != 6) {
           if(kea_flex_id_debug) {
-	    LOG_INFO(flex_id_logger, "No vlan 00 06");
+	    LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No vlan 00 06");
 	  }
         } else {
 	    std::string  opt_id;
@@ -382,8 +383,11 @@ int host4_identifier(CalloutHandle& handle) {
     handle.getContext("flex-subnet-id", sid);
 
     std::vector<uint8_t> id_value;
-    if(find_id(pkt4, sid, id_value))
+    if(find_id(pkt4, sid, id_value)) {
+	Host::IdentifierType type = Host::IDENT_FLEX;
 	handle.setArgument("id_value", id_value);
+	handle.setArgument("id_type", type);
+    }
     return (0);
 }
 
