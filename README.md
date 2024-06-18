@@ -93,7 +93,7 @@ $n - subnet-id (only for id template!)
         "library": "/opt/kea/lib/kea/hooks/libkea-flex-id.so",
         "parameters": {
             "debug": false,
-            "template_id": "/tmpfs/flexid/$n/$m",
+            "template_id": [ "/tmpfs/flexid/$n/$m" ],
             "template_class": [ "/tmpfs/flexid/bad/$m", "/tmpfs/flexid/$s/$p" ],
 	    "mode": "first",
             "default_class": "BAD"
