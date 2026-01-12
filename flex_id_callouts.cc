@@ -230,7 +230,7 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 	    std::string  opt_id;
 	    opt_id.clear();
 	    for(int i=2; i < 8; i++) {
-		if(opt_id.empty()) opt_id += ':';
+		if(i > 2) opt_id += ':';
 		uint8_t v1 = (o82s[i] & 0xf) + 0x30;
 		uint8_t v2 = ((o82s[i] >> 4) & 0xf) + 0x30;
 		opt_id += (char)(v2 < 0x3a ? v2 : v2+39);
