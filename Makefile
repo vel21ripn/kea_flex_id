@@ -35,6 +35,9 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cc
 	$(CPP) $(CPPFLAGS) $(LIBS) -fpic -shared \
 		-c $< -o $@
 
+flex_id_messages.cc: flex_id_messages.mes
+	kea-msg-compiler $<
+
 install: all
 	@printf "\n# MAKE -> Copy hook library into Kea\n\n"
 	@cp -av "$(BUILD_DIR)/$(LIBHOOK)" "$(KEA_INSTALLHOOKS)"/

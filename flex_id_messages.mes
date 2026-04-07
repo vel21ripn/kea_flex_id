@@ -42,3 +42,9 @@ This debug message shows mode.
 
 % FLEX_CLS_DEFAULT Flex-CLS default class '%1'
 This debug message shows named of added class.
+
+% FLEX_ID_SUBNET4_SELECT_ERROR Flex-ID select subnet error '%1'
+This debug message shows errors on subnet4_select.
+
+% FLEX_ID_HOSTID_ERROR Flex-ID host identifier error '%1'
+This debug message shows errors on host4_identifier.

@@ -10,6 +10,7 @@ extern const isc::log::MessageID FLEX_CLS_DEFAULT = "FLEX_CLS_DEFAULT";
 extern const isc::log::MessageID FLEX_CLS_MODE = "FLEX_CLS_MODE";
 extern const isc::log::MessageID FLEX_CLS_OPTSTR = "FLEX_CLS_OPTSTR";
 extern const isc::log::MessageID FLEX_ID_BAD_IP = "FLEX_ID_BAD_IP";
+extern const isc::log::MessageID FLEX_ID_HOSTID_ERROR = "FLEX_ID_HOSTID_ERROR";
 extern const isc::log::MessageID FLEX_ID_IP = "FLEX_ID_IP";
 extern const isc::log::MessageID FLEX_ID_LOAD = "FLEX_ID_LOAD";
 extern const isc::log::MessageID FLEX_ID_LOAD_ERROR = "FLEX_ID_LOAD_ERROR";
@@ -17,6 +18,7 @@ extern const isc::log::MessageID FLEX_ID_NO_LINK = "FLEX_ID_NO_LINK";
 extern const isc::log::MessageID FLEX_ID_NO_OPT = "FLEX_ID_NO_OPT";
 extern const isc::log::MessageID FLEX_ID_OPTSTR = "FLEX_ID_OPTSTR";
 extern const isc::log::MessageID FLEX_ID_PATH = "FLEX_ID_PATH";
+extern const isc::log::MessageID FLEX_ID_SUBNET4_SELECT_ERROR = "FLEX_ID_SUBNET4_SELECT_ERROR";
 extern const isc::log::MessageID FLEX_ID_UNLOAD = "FLEX_ID_UNLOAD";
 
 namespace {
@@ -28,6 +30,7 @@ const char* values[] = {
     "FLEX_CLS_MODE", "Flex-CLS mode '%1'",
     "FLEX_CLS_OPTSTR", "Flex-CLS add template '%1'",
     "FLEX_ID_BAD_IP", "Flex-ID %1 bad ipv4 '%2'",
+    "FLEX_ID_HOSTID_ERROR", "Flex-ID host identifier error '%1'",
     "FLEX_ID_IP", "Flex-ID %2 from '%1'",
     "FLEX_ID_LOAD", "Run Script hooks library has been loaded template_id %1, template_class %2",
     "FLEX_ID_LOAD_ERROR", "Run Script hooks library failed: %1",
@@ -35,6 +38,7 @@ const char* values[] = {
     "FLEX_ID_NO_OPT", "Flex-ID '%1' not set",
     "FLEX_ID_OPTSTR", "Flex-ID add template '%1'",
     "FLEX_ID_PATH", "'%1' -> '%2' (%3)",
+    "FLEX_ID_SUBNET4_SELECT_ERROR", "Flex-ID select subnet error '%1'",
     "FLEX_ID_UNLOAD", "Run Script hooks library has been unloaded",
     NULL
 };

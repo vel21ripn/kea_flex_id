@@ -359,13 +359,20 @@ int subnet4_select(CalloutHandle& handle) {
         status == CalloutHandle::NEXT_STEP_SKIP) {
         return (0);
     }
-    Pkt4Ptr pkt4;
-    handle.getArgument("query4", pkt4);
-    if(!pkt4) return(0);
-    Subnet4Ptr subnet4;
-    handle.getArgument("subnet4", subnet4);
-    if(!subnet4) return(0);
-    handle.setContext("flex-subnet-id",subnet4->getID());
+    try {
+	ConstSubnet4Ptr subnet4 = NULL;
+        handle.getArgument("subnet4", subnet4);
+        if(!subnet4) return(0);
+        if(kea_flex_id_debug)
+	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "subnet4_select getArgument subnet4");
+        handle.setContext("flex-subnet-id",subnet4->getID());
+        if(kea_flex_id_debug)
+	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "subnet4_select setContext flex-subnet-id");
+    } catch (const std::exception& ex) {
+        LOG_ERROR(flex_id_logger, FLEX_ID_SUBNET4_SELECT_ERROR)
+            .arg(ex.what());
+        return (1);
+    }
     return (0);
 }
 
@@ -375,20 +382,38 @@ int host4_identifier(CalloutHandle& handle) {
         status == CalloutHandle::NEXT_STEP_SKIP) {
         return (0);
     }
-    Pkt4Ptr pkt4;
-    handle.getArgument("query4", pkt4);
-    if(!pkt4) return(0);
+    try {
+	Pkt4Ptr pkt4;
+	handle.getArgument("query4", pkt4);
+	if(!pkt4) return(0);
+	if(kea_flex_id_debug)
+	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier getArgument query4");
 
-    isc::dhcp::SubnetID sid;
-    handle.getContext("flex-subnet-id", sid);
+	isc::dhcp::SubnetID sid;
+	handle.getContext("flex-subnet-id", sid);
 
-    std::vector<uint8_t> id_value;
-    if(find_id(pkt4, sid, id_value)) {
-	Host::IdentifierType type = Host::IDENT_FLEX;
-	handle.setArgument("id_value", id_value);
-	handle.setArgument("id_type", type);
+	if(kea_flex_id_debug)
+	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier getContext flex-subnet-id");
+
+	std::vector<uint8_t> id_value;
+	if(find_id(pkt4, sid, id_value)) {
+	    Host::IdentifierType type = Host::IDENT_FLEX;
+	    handle.setArgument("id_value", id_value);
+	    if(kea_flex_id_debug)
+	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setArgument id_value");
+	    handle.setArgument("id_type", type);
+	    if(kea_flex_id_debug)
+	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setArgument id_type");
+	    handle.setStatus(CalloutHandle::NEXT_STEP_CONTINUE);
+	    if(kea_flex_id_debug)
+	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setStatus continue");
+	}
+	return (0);
+    } catch (const std::exception& ex) {
+        LOG_ERROR(flex_id_logger, FLEX_ID_HOSTID_ERROR)
+            .arg(ex.what());
+        return (1);
     }
-    return (0);
 }
 
 /// @brief This function is called to retrieve the multi-threading compatibility.
