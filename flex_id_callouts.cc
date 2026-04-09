@@ -59,7 +59,7 @@ static int kea_flex_get_template(ConstElementPtr pattern,
 	std::vector<std::string> &list) 
 {
     std::string value;
-    if(pattern) {
+    if (pattern) {
         switch(pattern->getType()) {
          case Element::string:
             value = pattern->stringValue();
@@ -98,17 +98,18 @@ static int kea_flex_get_template(ConstElementPtr pattern,
 int load(LibraryHandle& handle) {
 
     ConstElementPtr param_debug = handle.getParameter("debug");
-    if(param_debug) {
-      if (param_debug->getType() != Element::boolean)
+    if (param_debug) {
+        if (param_debug->getType() != Element::boolean)
             isc_throw(isc::BadValue, "Parameter 'debug' must be a bool!");
 
-      kea_flex_id_debug = param_debug->boolValue();
+        kea_flex_id_debug = param_debug->boolValue();
     }
 
     ConstElementPtr param_mode = handle.getParameter("mode");
-    if(param_mode) {
-        if(param_mode->getType() != Element::string)
+    if (param_mode) {
+        if (param_mode->getType() != Element::string)
             isc_throw(isc::BadValue, "Parameter 'mode' must be a string!");
+
         std::string mode_str = param_mode->stringValue();
         if(mode_str == "all") kea_flex_cls_mode = MODE_ALL;
           else if(mode_str == "first") kea_flex_cls_mode = MODE_FIRST;
@@ -125,13 +126,13 @@ int load(LibraryHandle& handle) {
     template_cls_ok = kea_flex_get_template(template_cls, FLEX_CLS_OPTSTR, flex_cls_template);
 
     ConstElementPtr param_default_class = handle.getParameter("default_class");
-    if(param_default_class) {
-        if(param_default_class->getType() != Element::string)
+    if (param_default_class) {
+        if (param_default_class->getType() != Element::string)
             isc_throw(isc::BadValue, "Parameter 'default_class' must be a string!");
+
         flex_cls_default = param_default_class->stringValue();
-        if(!flex_cls_default.empty()) {
+        if (!flex_cls_default.empty())
             LOG_INFO(flex_id_logger, FLEX_CLS_DEFAULT).arg(flex_cls_default);
-        }
     }
 
     LOG_INFO(flex_id_logger, FLEX_ID_LOAD).arg(template_id_ok).arg(template_cls_ok);
@@ -147,27 +148,28 @@ int unload() {
     return (0);
 }
 
-static char *flex_id_readfile(char *output,size_t len, const char *path) {
-    memset(output,0,len);
+static bool get_text_option(std::string  &opt_id, const OptionBuffer o82,int opt_len) {
 
-    int fd = open(path,O_RDONLY);
-    if(fd >= 0) {
-        read(fd,output,len-1);
-        close(fd);
-    } else {
-        if(readlink(path,output,len-1) < 0) {
-            if(0 && kea_flex_id_debug) {
-               LOG_INFO(flex_id_logger, FLEX_ID_NO_LINK).arg(path).arg(strerror(errno));
-            }
-            return NULL;
-        }
+    opt_id.clear();
+    bool is_text = true;
+    for (int i=0; i < opt_len; i++) {
+	const char c = (char)o82[i];
+	if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+	    (c >= '0' && c <= '9') || strchr(":;.,_-=",c)) {
+		opt_id += c;
+	} else {
+	    is_text = false;
+	    opt_id.clear();
+	    break;
+	}
     }
-    char *d = strchr(output,'\n');
-    // removing all space and control symbols at end of line
-    while(d && d != output && *d <= ' ') *d-- = '\0';
-    // skip all space and control symbols at start of line
-    for(d = output; *d && *d <= ' '; d++);
-    return d;
+    return is_text;
+}
+
+static void flex_id_macros(std::map<char,std::string> &macros) {
+  for (const auto& kv : macros) {
+       LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Macro $%1 = '%2'").arg(kv.first).arg(kv.second);
+  }
 }
 
 static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
@@ -177,56 +179,57 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 
     macros.clear();
 
-    if(!option) { 
-        if(kea_flex_id_debug) {
-	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No DHCP_AGENT_OPTIONS");
+    std::string ifname = pkt4->getIface();
+    if (!ifname.empty())
+        macros['i'] = ifname;
+
+    std::string addr = pkt4->getHWAddr()->toText(false);
+    if (!addr.empty())
+        macros['m'] = addr;
+
+    if (sid)
+        macros['n'] = std::to_string(sid);
+
+    if (!option) { 
+        if(kea_flex_id_debug)
+	    LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No DHCP_AGENT_OPTIONS");
+	return;
+    }
+
+    OptionPtr opt82 = option->getOption(RAI_OPTION_AGENT_CIRCUIT_ID);
+    if (opt82) {
+	const OptionBuffer o82v = opt82->getData();
+	if (o82v[0] == 0 && o82v[1] == 4) {
+       	    std::string vlan = std::to_string(int ((o82v[2]*256 + o82v[3]) & 0xfff));
+	    std::string port = std::to_string(int ((o82v[4]*256 + o82v[5]) & 0xffff));
+
+    	    macros['v'] = vlan;
+	    macros['p'] = port;
+            if (kea_flex_id_debug)
+	        LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: vlan %1 port %2").arg(vlan).arg(port);
+        } else {
+            if (kea_flex_id_debug)
+	        LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: No port/vlan info");
+	    std::string  opt_id;
+
+	    if (get_text_option(opt_id, o82v, opt82->len()-2)) {
+	        macros['o'] = opt_id;
+                if (kea_flex_id_debug)
+	            LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: agent circuit_id %1").arg(opt_id);
+	    } else {
+                if (kea_flex_id_debug)
+	            LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: nontext agent circuit_id");
+	    }
 	}
     } else {
-      OptionPtr opt82 = option->getOption(RAI_OPTION_AGENT_CIRCUIT_ID);
-      if(!opt82) {
-        if(kea_flex_id_debug) {
-	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No AGENT_CIRCUIT_ID");
-	}
-      } else {
-	const OptionBuffer o82v = opt82->getData();
-	if(o82v[0] != 0 || o82v[1] != 4) {
-          if(kea_flex_id_debug) {
-	    LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No port 00 04");
-	  }
-	  std::string  opt_id;
-	  opt_id.clear();
-	  bool is_text = true;
-	  int opt_len = opt82->len()-2;
-	  for(int i=0; i < opt_len; i++) {
-	    const char c = (char)o82v[i];
-	    if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-	       (c >= '0' && c <= '9') || strchr(":;.,_-=",c)) {
-	          opt_id += c;
-	    } else {
-	          is_text = false;
-	    }
-	  }
-	  if(is_text) {
-	    macros['o'] = opt_id;
-	  }
-        } else {
-    	    macros['v'] = boost::lexical_cast<std::string>(int ((o82v[2]*256 + o82v[3]) & 0xfff));
-	    macros['p'] = boost::lexical_cast<std::string>(int ((o82v[4]*256 + o82v[5]) & 0xffff));
-	}
-      }
+        if (kea_flex_id_debug)
+            LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No AGENT_CIRCUIT_ID");
+    }
 
-      opt82 = option->getOption(RAI_OPTION_REMOTE_ID);
-      if(!opt82) { 
-        if(kea_flex_id_debug) {
-	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No REMOTE_ID");
-	}
-      } else {
+    opt82 = option->getOption(RAI_OPTION_REMOTE_ID);
+    if (opt82) { 
 	const OptionBuffer o82s = opt82->getData();
-	if(o82s[0] != 0 || o82s[1] != 6) {
-          if(kea_flex_id_debug) {
-	    LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "No vlan 00 06");
-	  }
-        } else {
+	if (o82s[0] == 0 && o82s[1] == 6) {
 	    std::string  opt_id;
 	    opt_id.clear();
 	    for(int i=2; i < 8; i++) {
@@ -237,71 +240,111 @@ static void flex_get_params(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid,
 		opt_id += (char)(v1 < 0x3a ? v1 : v1+39);
 	    }
 	    macros['s'] = opt_id;
+            if (kea_flex_id_debug)
+	        LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: remote_id %1").arg(opt_id);
+        } else {
+            if (kea_flex_id_debug)
+	         LOG_WARN(flex_id_logger, "OPT82: No remote_id info");
+	    std::string  opt_id;
+
+	    if (get_text_option(opt_id, o82s, opt82->len()-2)) {
+	        macros['s'] = opt_id;
+                if (kea_flex_id_debug)
+	            LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: agent remote_id %1").arg(opt_id);
+	    } else {
+                if (kea_flex_id_debug)
+	            LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "Option82: nontext agent remote_id");
+	    }
 	}
-      }
+    } else {
+        if(kea_flex_id_debug)
+	    LOG_WARN(flex_id_logger, "OPT82: No REMOTE_ID");
     }
-    std::string ifname = pkt4->getIface();
-    if(!ifname.empty())
-	    macros['i'] = ifname;
-    std::string addr = pkt4->getHWAddr()->toText(false);
-    if(!addr.empty())
-	    macros['m'] = addr;
-    macros['n'] = boost::lexical_cast<std::string>(sid);
 }
 
-static int flex_make_path(std::map<char,std::string> &macros,
-                const char *src, char *buf, size_t len) {
-    char *d;
-    const char *s = src;
-    size_t l;
-    int n;
+static int flex_template_read(std::map<char,std::string> &macros,
+                const std::string &src,
+		std::string &buf,
+		std::string &path,
+		const isc::log::MessageID& ident) {
 
-    for(l = 0,d = buf; src && *src && l < len-2; src++) {
-        if(*src != '$') { *d++ = *src; l++; continue; }
-        src++;
-        if(macros.count(*src)) {
-            n = snprintf(d,len-2-l,"%s",macros[*src].c_str());
-            d += n; l += n;
-        } else {
-            if(kea_flex_id_debug) {
-               LOG_INFO(flex_id_logger, FLEX_ID_NO_OPT).arg(*src);
-            }
+    buf.clear();
+    path.clear();
+    int is_macro = 0;
+    for (char c : src) {
+	if (!is_macro) {
+	    if (c != '$')
+	        path += c;
+	    else
+		is_macro = 1;
+	} else {
+	    is_macro = 0;
+	    if (c == '$') {
+		path += c;
+		continue;
+	    }
+	    if(macros.count(c)) {
+		for (char c2 : macros[c]) {
+		    path += c2;
+		}
+	    } else {
+                if (kea_flex_id_debug)
+                    LOG_INFO(flex_id_logger, FLEX_ID_NO_OPT).arg(src).arg(c);
+                return 0;
+	    }
+	}
+    }
+    struct stat st;
+    const char * res = lstat(path.c_str(),&st) < 0 ? "NO":"YES";
+
+    if (kea_flex_id_debug)
+        LOG_INFO(flex_id_logger, ident).arg(src).arg(path).arg(res);
+
+    if(res[0] != 'Y') return 0;
+    char output[256];
+    memset(output,0,sizeof(output));
+    int fd = open(path.c_str(),O_RDONLY);
+    if (fd >= 0) {
+        read(fd,output,sizeof(output)-1);
+        close(fd);
+    } else {
+        if(readlink(path.c_str(),output,sizeof(output)-1) < 0)
             return 0;
-        }
     }
-    *d = '\0';
-    if(kea_flex_id_debug) {
-	struct stat st;
-	const char * res = lstat(buf,&st) < 0 ? "NO":"YES";
-        LOG_INFO(flex_id_logger, FLEX_ID_PATH).arg(s).arg(buf).arg(res);
-    }
+    // removing EOL
+    char *d = strchr(output,'\n');
+    // removing all space and control symbols at end of line
+    while (d && d != output && ( *d <= ' ' || *d == '\t') ) *d-- = '\0';
+    // skip all space and control symbols at start of line
+    for (d = output; *d && *d <= ' '; d++);
+    // copy string
+    for (; *d; d++) buf += *d;
+
     return(1);
 }
 
 int find_id(Pkt4Ptr &pkt4, isc::dhcp::SubnetID sid, std::vector<uint8_t> &id_value) {
-    char path[256],ip[64],*d;
     struct in_addr inp = { 0 };
     size_t l;
 
     std::map<char,std::string> macros;
 
     flex_get_params(pkt4,sid,macros);
+    if (kea_flex_id_debug)
+        flex_id_macros(macros);
     id_value.clear();
 
     for (auto& src: flex_id_template) {
-
-        if(!flex_make_path(macros,src.c_str(),path,sizeof(path)))
-                continue;
-        d = flex_id_readfile(ip,sizeof(ip),path);
-        if(!d) continue;
-        if(!inet_aton(d,&inp)) {
-            if(kea_flex_id_debug) {
-               LOG_INFO(flex_id_logger, FLEX_ID_BAD_IP).arg(path).arg(d);
-            }
+	std::string ip(""), path("");
+        if (!flex_template_read(macros,src,ip,path,FLEX_ID_PATH))
+            continue;
+        if (!inet_aton(ip.c_str(),&inp)) {
+            if (kea_flex_id_debug) 
+                LOG_WARN(flex_id_logger, FLEX_ID_BAD_IP).arg(path).arg(ip);
 	    continue;
         }
 
-	char id_hex_str[12];
+	char id_hex_str[20];
 	snprintf(id_hex_str,sizeof(id_hex_str),"0x%08x",htonl(inp.s_addr));
         LOG_INFO(flex_id_logger, FLEX_ID_IP).arg(path).arg(id_hex_str);
         
@@ -323,32 +366,34 @@ int pkt4_receive(CalloutHandle& handle) {
     handle.getArgument("query4", pkt4);
     if(!pkt4) return(0);
 
-    char path[256],ip[64],*d;
-
     std::map<char,std::string> macros;
 
     flex_get_params(pkt4,0,macros);
+    if (kea_flex_id_debug)
+        flex_id_macros(macros);
 
     int added_classes = 0;
     for (auto& src: flex_cls_template) {
 
-    	if(!flex_make_path(macros,src.c_str(),path,sizeof(path)))
-		continue;
-	d = flex_id_readfile(ip,sizeof(ip),path);
-	if(!d) continue;
-	for(char *c = d; *c ; c++)
-	  if(!isalnum(*c) && *c != '_') {
-	    LOG_INFO(flex_id_logger, FLEX_CLS_BAD).arg(d);
+	std::string cls(""), path("");
+    	if (!flex_template_read(macros,src,cls,path,FLEX_CLS_PATH))
 	    continue;
-	  }
-	pkt4->addClass(d);
-	LOG_INFO(flex_id_logger, FLEX_CLS_ADD).arg(d);
+	int cls_ok = 1;
+	for (char c : cls)
+	    if (!isalnum(c) && c != '_') {
+		cls_ok = 0;
+	        LOG_WARN(flex_id_logger, FLEX_CLS_BAD).arg(cls);
+	        break;
+	    }
+	if(!cls_ok) continue;
+	pkt4->addClass(cls);
+	LOG_INFO(flex_id_logger, FLEX_CLS_ADD).arg(cls);
 	added_classes++;
 	if(kea_flex_cls_mode == MODE_FIRST) break;
     }
     if(!added_classes && !flex_cls_default.empty()) {
 	pkt4->addClass(flex_cls_default.c_str());
-	LOG_INFO(flex_id_logger, FLEX_CLS_ADD).arg(flex_cls_default);
+	LOG_INFO(flex_id_logger, FLEX_CLS_ADD_DEFAULT).arg(flex_cls_default);
     }
     return (0);
 }
@@ -359,19 +404,13 @@ int subnet4_select(CalloutHandle& handle) {
         status == CalloutHandle::NEXT_STEP_SKIP) {
         return (0);
     }
-    try {
-	ConstSubnet4Ptr subnet4 = NULL;
-        handle.getArgument("subnet4", subnet4);
-        if(!subnet4) return(0);
-        if(kea_flex_id_debug)
-	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "subnet4_select getArgument subnet4");
+    ConstSubnet4Ptr subnet4 = NULL;
+    handle.getArgument("subnet4", subnet4);
+    if (subnet4) {
         handle.setContext("flex-subnet-id",subnet4->getID());
-        if(kea_flex_id_debug)
-	  LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "subnet4_select setContext flex-subnet-id");
-    } catch (const std::exception& ex) {
-        LOG_ERROR(flex_id_logger, FLEX_ID_SUBNET4_SELECT_ERROR)
-            .arg(ex.what());
-        return (1);
+        if (kea_flex_id_debug) {
+            LOG_INFO(flex_id_logger, FLEX_ID_SUBNET4_ID).arg(subnet4->getID());
+	}
     }
     return (0);
 }
@@ -382,38 +421,21 @@ int host4_identifier(CalloutHandle& handle) {
         status == CalloutHandle::NEXT_STEP_SKIP) {
         return (0);
     }
-    try {
-	Pkt4Ptr pkt4;
-	handle.getArgument("query4", pkt4);
-	if(!pkt4) return(0);
-	if(kea_flex_id_debug)
-	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier getArgument query4");
+    Pkt4Ptr pkt4;
+    handle.getArgument("query4", pkt4);
+    if (!pkt4) return (0);
 
-	isc::dhcp::SubnetID sid;
-	handle.getContext("flex-subnet-id", sid);
+    isc::dhcp::SubnetID sid = 0;
+    handle.getContext("flex-subnet-id", sid);
 
-	if(kea_flex_id_debug)
-	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier getContext flex-subnet-id");
-
-	std::vector<uint8_t> id_value;
-	if(find_id(pkt4, sid, id_value)) {
-	    Host::IdentifierType type = Host::IDENT_FLEX;
-	    handle.setArgument("id_value", id_value);
-	    if(kea_flex_id_debug)
-	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setArgument id_value");
-	    handle.setArgument("id_type", type);
-	    if(kea_flex_id_debug)
-	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setArgument id_type");
-	    handle.setStatus(CalloutHandle::NEXT_STEP_CONTINUE);
-	    if(kea_flex_id_debug)
-	      LOG_DEBUG(flex_id_logger, DBGLVL_PKT_HANDLING, "host4_identifier setStatus continue");
-	}
-	return (0);
-    } catch (const std::exception& ex) {
-        LOG_ERROR(flex_id_logger, FLEX_ID_HOSTID_ERROR)
-            .arg(ex.what());
-        return (1);
+    std::vector<uint8_t> id_value;
+    if (find_id(pkt4, sid, id_value)) {
+        Host::IdentifierType type = Host::IDENT_FLEX;
+        handle.setArgument("id_type", type);
+        handle.setArgument("id_value", id_value);
+        handle.setStatus(CalloutHandle::NEXT_STEP_CONTINUE);
     }
+    return (0);
 }
 
 /// @brief This function is called to retrieve the multi-threading compatibility.

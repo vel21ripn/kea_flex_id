@@ -13,12 +13,13 @@ include Makefile.config
 all: $(BUILD_DIR)/$(LIBHOOK)
 
 depend: $(BUILD_DIR)/.depend
-$(BUILD_DIR)/.depend: $(SOURCE_FILES)
+$(BUILD_DIR)/.depend: $(SOURCE_FILES) flex_id_messages.mes
 	@printf '\n# MAKE -> Find header files dependencies...\n\n'
 	@mkdir -p "$(BUILD_DIR)"
 	echo $(CPP) -MM $(SOURCE_FILES)
 	$(CPP) -MM $(SOURCE_FILES) > "$(BUILD_DIR)"/.depend
 	@sed -i "s#.*#${BUILD_DIR}/&#" "$(BUILD_DIR)"/.depend
+	@echo "flex_id_messages.cc: flex_id_messages.mes" >>"$(BUILD_DIR)"/.depend
 
 include $(BUILD_DIR)/.depend
 
