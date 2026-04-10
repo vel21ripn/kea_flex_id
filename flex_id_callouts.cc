@@ -277,49 +277,54 @@ static int flex_template_read(std::map<char,std::string> &macros,
 	        path += c;
 	    else
 		is_macro = 1;
+	    continue;
+	}
+	is_macro = 0;
+	if (c == '$') {
+	    path += c;
+	    continue;
+	}
+	if(macros.count(c)) {
+	    path += macros[c];
 	} else {
-	    is_macro = 0;
-	    if (c == '$') {
-		path += c;
-		continue;
-	    }
-	    if(macros.count(c)) {
-		for (char c2 : macros[c]) {
-		    path += c2;
-		}
-	    } else {
-                if (kea_flex_id_debug)
-                    LOG_INFO(flex_id_logger, FLEX_ID_NO_OPT).arg(src).arg(c);
-                return 0;
-	    }
+            if (kea_flex_id_debug)
+                LOG_INFO(flex_id_logger, FLEX_ID_NO_OPT).arg(src).arg(c);
+            return 0;
 	}
     }
     struct stat st;
-    const char * res = lstat(path.c_str(),&st) < 0 ? "NO":"YES";
+    if( lstat(path.c_str(),&st) < 0) {
+    
+        if (kea_flex_id_debug) 
+            LOG_INFO(flex_id_logger, ident).arg(src).arg(path).arg("Not exists");
+	return 0;
+    }
 
-    if (kea_flex_id_debug)
-        LOG_INFO(flex_id_logger, ident).arg(src).arg(path).arg(res);
+    std::array<char,256> output;
+    std::fill(begin(output),end(output),0);
 
-    if(res[0] != 'Y') return 0;
-    char output[256];
-    memset(output,0,sizeof(output));
     int fd = open(path.c_str(),O_RDONLY);
     if (fd >= 0) {
-        read(fd,output,sizeof(output)-1);
+        read(fd,output.data(),output.size()-1);
         close(fd);
     } else {
-        if(readlink(path.c_str(),output,sizeof(output)-1) < 0)
+        if(readlink(path.c_str(),output.data(),output.size()-1) < 0)
             return 0;
     }
-    // removing EOL
-    char *d = strchr(output,'\n');
-    // removing all space and control symbols at end of line
-    while (d && d != output && ( *d <= ' ' || *d == '\t') ) *d-- = '\0';
-    // skip all space and control symbols at start of line
-    for (d = output; *d && *d <= ' '; d++);
-    // copy string
-    for (; *d; d++) buf += *d;
-
+    int s = 0; 
+    for (auto c : output) {
+	 if(!c) break;
+         if (!s) {
+	     if(c == ' ' || c == '\t') continue;
+	     s = 1;
+	     buf += c;
+	 } else {
+             if (c == '\r' || c == '\n') break;
+             buf += c;
+	 }
+    }
+    if (kea_flex_id_debug) 
+        LOG_INFO(flex_id_logger, ident).arg(src).arg(path).arg(buf);
     return(1);
 }
 

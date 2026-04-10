@@ -10,10 +10,10 @@ library. The details of the error are provided as argument of the log message.
 % FLEX_ID_UNLOAD Run Script hooks library has been unloaded
 This info message indicates that the RunScript hooks library has been unloaded.
 
-% FLEX_ID_PATH ID '%1' -> '%2' (%3)
+% FLEX_ID_PATH ID '%1' -> '%2' '%3'
 This debug message.
 
-% FLEX_CLS_PATH CLS '%1' -> '%2' (%3)
+% FLEX_CLS_PATH CLS '%1' -> '%2' '%3'
 This debug message.
 
 % FLEX_ID_BAD_IP %1 bad ipv4 '%2'
